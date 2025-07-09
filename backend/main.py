@@ -199,5 +199,29 @@ def create_payment(
     db.refresh(db_payment)
     return db_payment
 
+# Add this endpoint after your existing routes in main.py
+
+@app.post("/admin/init-db")
+def initialize_database():
+    """Initialize database tables - run this once after deployment"""
+    try:
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+        return {"message": "Database tables created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
+
+@app.get("/admin/check-db")
+def check_database():
+    """Check if database tables exist"""
+    try:
+        db = SessionLocal()
+        # Try to query users table
+        result = db.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()
+        tables = [row[0] for row in result]
+        db.close()
+        return {"tables": tables, "status": "connected"}
+    except Exception as e:
+        return {"error": str(e), "status": "error"}
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
